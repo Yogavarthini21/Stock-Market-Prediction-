@@ -1,0 +1,168 @@
+﻿import json
+import pandas as pd
+df =pd.read_csv("/content/ORCL.csv")
+df.columns=['Date','Open', 'High', 'Low', 'Close', 'Volume']
+df = df.sort_values(by="Date")
+df.reset_index(drop=True, inplace=True)
+df.head()
+import matplotlib.pyplot as plt
+plt.plot(df['Close'] , label = 'Close')
+plt.ylabel('Price of Stock')
+plt.xlabel('Day')
+plt.title('IBM Stock Price')
+plt.figure()
+from sklearn.preprocessing import MinMaxScaler
+import numpy as np
+import math
+data = df.filter(['Close'])
+raw_data = data.values
+# Taking 80% data as training data and 20% data as testing data
+training_data_len = math.ceil(len(raw_data)*.8)
+print("Length of all closing values: ",len(raw_data))
+print("Length of training data: ",training_data_len)
+print("Length of testing data: ", len(raw_data) - training_data_len)
+# Scaling the data via MinMaxScaler.
+scaler = MinMaxScaler(feature_range= (0,1))
+scaled_data = scaler.fit_transform(raw_data)
+training_data = scaled_data[0 : training_data_len , :]
+# TRAIN DATA
+# Converting training data into a data structure with 60 timesteps and 1 output.
+[22/11, 9:46 pm] Yogavarthini: x_train = []
+y_train = []
+[22/11, 9:53 pm] Yogavarthini: for i in range(60 , len(training_data)):
+x_train.append(training_data[i-60:i,0])
+y_train.append(training_data[i,0 ])
+# Converting to numpy arrays
+x_train , y_train = np.array(x_train) , np.array(y_train)
+x_train = np.reshape(x_train, (x_train.shape[0] , x_train.shape[1] , 1))
+y_train = np.reshape(y_train, (y_train.shape[0] , 1))
+# Check train data shapes
+print("\nx_train shape: ",x_train.shape)
+print("y_train shape: ",y_train.shape)
+# TEST DATA
+test_data = scaled_data[training_data_len-60: , :]
+x_test = []
+y_test = raw_data[training_data_len: , : ]
+# Converting test data into a data structure with 60 timesteps and 1 output.
+for i in range(60 , len(test_data)):
+x_test.append(test_data[i-60:i , 0 ])
+# Converting to numpy array
+x_test = np.array(x_test)
+x_test = np.reshape(x_test , (x_test.shape[0] , x_test.shape[1] , 1))
+# Check test data shapes
+print("\nx_test shape: ",x_test.shape)
+print("y_test shape: ",y_test.shape)
+from keras.models import Sequential
+from keras.layers import Dense, LSTM, Dropout
+#Defining the LSTM Recurrent Model
+lstm_model = Sequential()
+lstm_model.add(LSTM(units = 50, return_sequences = True, input_shape = (x_train.s
+[22/11, 9:53 pm] Yogavarthini: hape[1], 1)))
+lstm_model.add(Dropout(0.2))
+lstm_model.add(LSTM(units = 50, return_sequences = True))
+lstm_model.add(Dropout(0.2))
+lstm_model.add(LSTM(units = 50, return_sequences = True))
+lstm_model.add(Dropout(0.2))
+lstm_model.add(LSTM(units = 50))
+lstm_model.add(Dropout(0.2))
+lstm_model.add(Dense(units = 1))
+[22/11, 9:54 pm] Yogavarthini: #Compiling and fitting the model
+lstm_model.compile(optimizer = 'adam', loss = 'mean_squared_error')
+history = lstm_model.fit(x_train, y_train, epochs = 15, batch_size = 32)
+#Visualizing the change in the training loss
+plt.figure(figsize=(8,5))
+train_loss = history.history['loss']
+plt.plot(train_loss)
+plt.title("Train Loss",size=18)
+plt.xlabel("Number of iterations")
+plt.ylabel("Visualizing the Train Loss")
+plt.show()
+# Predicting the closing stock prices for the test data.
+predictions = lstm_model.predict(x_test)
+prediction = scaler.inverse_transform(predictions)
+print("Length of predicted data: ",len(prediction))
+# Calculating error between the model predictions and actual values of test data
+error = np.sqrt(np.mean(prediction-y_test)**2)
+print("Mean square error: ", error)
+#Visualizing the prediction
+plt.figure(figsize=(20,10))
+plt.plot(y_test, color = 'green', label = 'IBM Stock Price')
+plt.plot(prediction, color = 'red', label = 'Predicted IBM Stock Price')
+plt.title('IBM Stock Price Prediction')
+plt.xlabel('Trading Day')
+plt.ylabel('IBM Stock Price')
+plt.legend()
+plt.show()
+#Visualizing the prediction data with the overall data
+plt.figure(figsize=(20,5))
+train = data[: training_data_len]
+valid = data[training_data_len : ]
+valid['Prediction'] = prediction
+plt.title('Prediction OF Stock ')
+plt.xlabel('Date' , fontsize = 18)
+plt.ylabel('Stock Price Rs.' , fontsize = 18)
+plt.plot(train['Close'])
+[22/11, 9:54 pm] Yogavarthini: plt.plot(valid[['Close' , 'Prediction']])
+plt.legend(['Train' , 'Test' , 'Prediction'] , loc = 'upper right')
+from sklearn.linear_model import LinearRegression
+lr_train, lr_test = df.loc[:training_data_len, ['Close']], df.loc[training_data_len:, ['Clos
+e']]
+lr_x_train = np.array(lr_train.index).reshape(-1, 1)
+lr_y_train = lr_train['Close']
+lr_x_test = np.array(lr_test.index).reshape(-1, 1)
+lr_y_test = lr_test['Close']
+# Create model
+lin_model = LinearRegression()
+lin_model.fit(lr_x_train, lr_y_train)
+# The coefficient and intercepts
+print('Slope: ', np.asscalar(np.squeeze(lin_model.coef_)))
+print('Intercept: ', lin_model.intercept_)
+# Visualizing Linear Regression on the data
+plt.figure(1, figsize=(16,10))
+plt.title('Linear Regression on IBM Stock Price Train Data')
+plt.scatter(lr_x_train, lr_y_train, edgecolor='w', label='Actual Price')
+plt.plot(lr_x_train, lin_model.predict(lr_x_train), color='r', label='Predicted Price')
+plt.xlabel('Trading Day')
+plt.ylabel('IBM Stock Price')
+plt.legend()
+plt.show()
+import keras
+arima_x_train = lr_train['Close'].values
+arima_x_test = lr_test['Close'].values
+# Create list of x train valuess
+history = [x for x in arima_x_train]
+# establish list for predictions
+model_predictions = []
+# Count number of test data points
+N_test_observations = len(arima_x_test)
+# loop through every data point
+for time_point in range(N_test_observations):
+model = ARIMA(history, order=(1,1,0))
+model_fit = model.fit(disp=0)
+[22/11, 9:55 pm] Yogavarthini: output = model_fit.forecast()
+yhat = output[0]
+model_predictions.append(yhat)
+true_test_value = arima_x_test[time_point]
+history.append(true_test_value)
+MAE_error = keras.metrics.mean_absolute_error(arima_x_test, model_predictions).n
+umpy()
+print('Testing Mean Squared Error is {}'.format(MAE_error))
+%store model_predictions
+plt.figure(figsize=(25,10))
+plt.plot(model_predictions, color='blue',label='Predicted Price')
+plt.plot(arima_x_test, color='red', label='Actual Price')
+plt.title('IBM Stock Price Prediction')
+plt.xlabel('Date')
+plt.ylabel('Prices')
+plt.legend()
+plt.show()
+arima_train = lr_train
+arima_valid = lr_test
+arima_valid['Prediction'] = model_predictions
+plt.figure(figsize=(18,10))
+plt.title('Prediction OF Stock ')
+plt.xlabel('Date' , fontsize = 18)
+plt.ylabel('Stock Price Rs.' , fontsize = 18)
+plt.plot(arima_train['Close'])
+plt.plot(arima_valid[['Close' , 'Prediction']])
+plt.legend(['Train' , 'Test' , 'Prediction'] , loc = 'upper right')
