@@ -27,9 +27,9 @@ scaled_data = scaler.fit_transform(raw_data)
 training_data = scaled_data[0 : training_data_len , :]
 # TRAIN DATA
 # Converting training data into a data structure with 60 timesteps and 1 output.
-[22/11, 9:46 pm] Yogavarthini: x_train = []
+x_train = []
 y_train = []
-[22/11, 9:53 pm] Yogavarthini: for i in range(60 , len(training_data)):
+for i in range(60 , len(training_data)):
 x_train.append(training_data[i-60:i,0])
 y_train.append(training_data[i,0 ])
 # Converting to numpy arrays
@@ -57,7 +57,7 @@ from keras.layers import Dense, LSTM, Dropout
 #Defining the LSTM Recurrent Model
 lstm_model = Sequential()
 lstm_model.add(LSTM(units = 50, return_sequences = True, input_shape = (x_train.s
-[22/11, 9:53 pm] Yogavarthini: hape[1], 1)))
+hape[1], 1)))
 lstm_model.add(Dropout(0.2))
 lstm_model.add(LSTM(units = 50, return_sequences = True))
 lstm_model.add(Dropout(0.2))
@@ -66,7 +66,7 @@ lstm_model.add(Dropout(0.2))
 lstm_model.add(LSTM(units = 50))
 lstm_model.add(Dropout(0.2))
 lstm_model.add(Dense(units = 1))
-[22/11, 9:54 pm] Yogavarthini: #Compiling and fitting the model
+#Compiling and fitting the model
 lstm_model.compile(optimizer = 'adam', loss = 'mean_squared_error')
 history = lstm_model.fit(x_train, y_train, epochs = 15, batch_size = 32)
 #Visualizing the change in the training loss
@@ -102,7 +102,7 @@ plt.title('Prediction OF Stock ')
 plt.xlabel('Date' , fontsize = 18)
 plt.ylabel('Stock Price Rs.' , fontsize = 18)
 plt.plot(train['Close'])
-[22/11, 9:54 pm] Yogavarthini: plt.plot(valid[['Close' , 'Prediction']])
+plt.plot(valid[['Close' , 'Prediction']])
 plt.legend(['Train' , 'Test' , 'Prediction'] , loc = 'upper right')
 from sklearn.linear_model import LinearRegression
 lr_train, lr_test = df.loc[:training_data_len, ['Close']], df.loc[training_data_len:, ['Clos
@@ -139,7 +139,7 @@ N_test_observations = len(arima_x_test)
 for time_point in range(N_test_observations):
 model = ARIMA(history, order=(1,1,0))
 model_fit = model.fit(disp=0)
-[22/11, 9:55 pm] Yogavarthini: output = model_fit.forecast()
+output = model_fit.forecast()
 yhat = output[0]
 model_predictions.append(yhat)
 true_test_value = arima_x_test[time_point]
